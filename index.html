@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<head>    
+
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" />
+
+
+
+
+	
+	
+	
+	
+	
+</head>
+
+<style>
+html, body, #map, .row-fluid{
+ height: 100%;
+ }
+
+  
+ #slidecontainer {
+    position:absolute ;
+    width: 75%;
+	bottom: 5%;
+	z-index:9999;
+	left: 15%
+}
+ 
+ 
+ 
+ 
+ 
+#map {
+    position:absolute ;
+    width: 100%;
+    height: 100%;
+	padding: 20%;
+
+}
+
+
+.legend{ 
+     text-align: left; 
+	 line-height: 18px; 
+	 color: #555; 
+	 background-color: #FFF; 
+	 
+	 
+	 } 
+	 
+.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7; }
+
+
+
+.leaflet-control-layers-toggle {
+  background-image: url(https://i.stack.imgur.com/3keSg.png) !important;
+  background-size: 20px 20px;
+  color: #000;
+  position:absolute;
+  top:80px;
+  right:20px;
+
+}
+
+
+.leaflet-control-layers-expanded {
+
+  position:absolute;
+
+  color:#000;
+  top:80px;
+  right:20px;
+}
+
+
+
+
+#mapname {
+  position: absolute;
+  right:0px;
+  top:0px;
+  z-index:9999;
+  color:#ADFF2F;
+  
+}
+
+input[type=range]::-ms-tooltip {
+    display: none;
+}
+input[type=range] {
+    /*removes default webkit styles*/
+    -webkit-appearance: none;
+    
+    /*fix for FF unable to apply focus style bug */
+    border: 0px;
+    
+    /*required for proper track sizing in FF*/
+
+}
+input[type=range]::-webkit-slider-runnable-track {
+
+    height: 5px;
+    background: #ddd;
+    border: none;
+    border-radius: 3px;
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    border: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: goldenrod;
+    margin-top: -4px;
+}
+input[type=range]:focus {
+    outline: none;
+}
+input[type=range]:focus::-webkit-slider-runnable-track {
+    background: #ccc;
+}
+
+input[type=range]::-moz-range-track {
+
+    height: 5px;
+    background: #ddd;
+    border: none;
+    border-radius: 3px;
+}
+input[type=range]::-moz-range-thumb {
+    border: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: goldenrod;
+}
+
+/*hide the outline behind the border*/
+input[type=range]:-moz-focusring{
+    outline: 0px;
+    outline-offset: -1px;
+	color: transparent;
+}
+
+input[type=range]::-ms-track {
+
+    height: 5px;
+    
+    /*remove bg colour from the track, we'll use ms-fill-lower and ms-fill-upper instead */
+    background: transparent;
+    
+    /*leave room for the larger thumb to overflow with a transparent border */
+    border-color: transparent;
+    border-width: 6px 0;
+
+    /*remove default tick marks*/
+    color: transparent;
+}
+input[type=range]::-ms-fill-lower {
+    background: #777;
+    border-radius: 10px;
+}
+input[type=range]::-ms-fill-upper {
+    background: #ddd;
+    border-radius: 10px;
+}
+input[type=range]::-ms-thumb {
+    border: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: goldenrod;
+}
+input[type=range]:focus::-ms-fill-lower {
+    background: #888;
+}
+input[type=range]:focus::-ms-fill-upper {
+    background: #ccc;
+}
+</style>
+
+
+
+
+
+<body> 
+
+
+
+
+
+       
+
+		
+<div id="map">
+
+</div>
+
+<div id="slidecontainer">
+<span>Current Date: <p id="currentdate"></p></span>
+<span>Map Date: <input id="mapdate"></span>
+<input type="range" id="Dateslider" class='slider' value="0" min="-30" max="0" onchange= updateTextInput(this.value)>
+</div>
+
+
+<div id="mapname">
+<p><b>North America CAPA Map (mm)</b></p>
+</div>
+
+
+
+
+
+
+
+<body> 
+
+
+
+
+
+<script type="text/javascript">
+
+
+document.getElementById("currentdate").innerHTML = Date();
+
+
+var layers=[]; 
+var input = document.getElementById("fileupload");
+var output = document.getElementById("output");
+
+
+
+
+//Load Map	
+
+var map = L.map(
+					'map',
+					{center: [47,-102],
+					zoom: 4,
+					minZoom: 2.5,
+					layers: [],
+					worldCopyJump: true,
+					crs: L.CRS.EPSG3857
+
+					 });
+
+			 
+					 
+$(".leaflet-control-zoom").css("visibility", "hidden");
+
+
+
+var googleSat = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
+					maxZoom: 18,
+					subdomains:['mt0','mt1','mt2','mt3']
+					 });
+var tile_layer = L.tileLayer(
+'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png',
+{
+	maxZoom: 18,
+	minZoom: 1,
+	continuousWorld: false,
+	noWrap: false,
+	attribution: 'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://www.openstreetmap.org/copyright">ODbL</a>.',
+	detectRetina: false
+	}
+)
+
+var StreetMap_layer = L.tileLayer(
+'http://{s}.tile.osm.org/{z}/{x}/{y}.png',
+{
+	maxZoom: 18,
+	minZoom: 1,
+	continuousWorld: false,
+	noWrap: false,
+	detectRetina: false,
+	attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+	}
+).addTo(map);
+//initiate map
+
+
+var southWest = L.latLng(-90, -180);
+var northEast = L.latLng(90, 180);
+var bounds = L.latLngBounds(southWest, northEast);
+var layerGroup = L.layerGroup();
+
+
+
+
+//Load CAPA
+function loadCAPA (){
+
+
+
+
+layerGroup.clearLayers();
+
+
+var url="http://10.190.65.40:8080/files/"+  document.getElementById('mapdate').value.toString().replace("-","").replace("-","")+".json"
+
+
+
+
+
+var capaL = jQuery.ajax({
+	url: url,
+	dataType: "json",
+	cache:false,
+	success: console.log("Data successfully loaded."),
+	error: function(xhr) {
+	alert("Data Not Available")
+	}
+})	
+
+
+$.when(capaL).done(function() {
+
+
+var capaLayer = new L.geoJson(capaL.responseJSON,{
+style: function(feature) {
+	switch (feature.properties.CCODE) {
+		case '#04E9E7': return {fillColor: "#04e9e7",weight: 0,fillOpacity: 0.7};
+		case '#019fF4':   return {fillColor: "#019ff4",weight: 0,fillOpacity: 0.7};
+		case '#0300F4': return {fillColor: "#0300f4",weight: 0,fillOpacity: 0.7};
+		case '#02Fd02':   return {fillColor: "#02fd02",weight: 0,fillOpacity: 0.7};
+		case '#01C501': return {fillColor: "#01c501",weight: 0,fillOpacity: 0.7};
+		case '#008e00':   return {fillColor: "#008e00",weight: 0,fillOpacity: 0.7};
+		case '#FdF802': return {fillColor: "#fdf802",weight: 0,fillOpacity: 0.7};
+		case '#E5Bc00':   return {fillColor: "#e5bc00",weight: 0,fillOpacity: 0.7};
+		case '#Fd9500': return {fillColor: "#fd9500",weight: 0,fillOpacity: 0.7};
+		case '#Fd0000':   return {fillColor: "#fd0000",weight: 0,fillOpacity: 0.7};
+		case '#D40000': return {fillColor: "#d40000",weight: 0,fillOpacity: 0.7};
+		case '#Bc0000':   return {fillColor: "#bc0000",weight: 0,fillOpacity: 0.7};
+		case '#F800Fd': return {fillColor: "#f800fd",weight: 0,fillOpacity: 0.7};
+		case '#9854C6':   return {fillColor: "#9854c6",weight: 0,fillOpacity: 0.7};		
+		case '#800080':   return {fillColor: "#800080",weight: 0,fillOpacity: 0.7}			
+	}
+
+  		
+	}
+	}
+
+	);	
+layerGroup.addLayer(capaLayer)
+layerGroup.addTo(map);
+	
+
+	
+
+	
+	
+	
+});	
+
+}
+
+var legend = L.control({position: 'bottomright'});
+
+legend.onAdd = function (map) {
+
+function getColor(d) {
+	return d > 70  ? '#800080' :	
+           d > 65  ? '#9854c6' :
+	       d > 60  ? '#f800fd' :
+           d > 55  ? '#bc0000' :
+           d > 50  ? '#d40000' :
+           d > 45   ? '#fd0000' :
+           d > 40   ? '#fd9500' :
+           d > 35   ? '#e5bc00' :
+           d > 30  ? '#fdf802' :
+           d > 25  ? '#008e00' :
+           d > 20  ? '#01c501' :
+           d > 15   ? '#02fd02' :
+           d > 10   ? '#0300f4' :
+           d > 5   ? '#019ff4' :
+                     '#04e9e7';
+}
+
+
+var div = L.DomUtil.create('div', 'legend'),
+grades = [0,5,10,15,20,25,30,35,40,45,50,55,60,65,70 ],
+labels = [];
+
+// loop through our density intervals and generate a label with a colored square for each interval
+for (var i = 0; i < grades.length; i++) {
+	div.innerHTML +=
+		'<div><i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+		grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+'+'</div>');
+}
+
+return div;
+};
+
+legend.addTo(map);	
+	
+
+	
+
+$("#display").click(function(){
+
+ var Costumlayer = L.geoJson( jQuery.parseJSON(output.value)
+	).addTo(map);
+	
+Costumlayer.setStyle(function(feature) {return feature.properties.style;});
+
+		});	
+
+
+
+
+var layer_control = {
+	base_layers : { "BackgroundMap" : tile_layer, "Satellite" : googleSat ,"OpenStreetMap": StreetMap_layer },
+	overlayMaps: {CAPA:layerGroup }
+	};
+L.control.layers(
+	layer_control.base_layers,
+	layer_control.overlayMaps,
+	{position: 'topright',
+	 collapsed: true,
+	 autoZIndex: true,
+	 
+	}).addTo(map);
+
+
+
+function updateTextInput(val) {
+		var today = new Date();
+		var mapdate = new Date();
+		var diff=parseInt(val)
+		mapdate.setDate(today.getDate()+diff)
+        document.getElementById('mapdate').value= mapdate.getFullYear() + "-" + (('0'+(mapdate.getMonth()+1)).slice(-2)) + "-" + ('0'+(mapdate.getDate())).slice(-2);
+
+		
+		
+		loadCAPA();
+		
+		
+		}		
+		
+	
+</script>
+
+
