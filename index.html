@@ -314,7 +314,7 @@ var url="https://cdn.rawgit.com/ericzhu1990/CAPAvisualizer/bdf19773/files/"+  do
 var capaL = jQuery.ajax({
 	url: url,
 	dataType: "json",
-	cache:false,
+	cache:true,
 	success: console.log("Data successfully loaded."),
 	error: function(xhr) {
 	alert("Data Not Available")
